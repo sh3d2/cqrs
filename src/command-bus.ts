@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { Component } from '@nestjs/common';
 import { Subject } from 'rxjs/Subject';
-import { ICommandBus, ICommand, ICommandHandler } from './interfaces/index';
+import { ICommandBus, ICommand, ICommandHandler, ICommandHandlerResult } from './interfaces/index';
 import { CommandHandlerNotFoundException } from './exceptions/command-not-found.exception';
 import { ObservableBus } from './utils/observable-bus';
 import { Metatype } from '@nestjs/common/interfaces';
@@ -19,14 +19,14 @@ export class CommandBus extends ObservableBus<ICommand> implements ICommandBus {
         this.moduleRef = moduleRef;
     }
 
-    execute<T extends ICommand>(command: T): Promise<any> {
+    execute<T extends ICommand, R extends ICommandHandlerResult>(command: T): Promise<R> {
         const handler = this.handlers.get(this.getCommandName(command));
         if (!handler) {
             throw new CommandHandlerNotFoundException();
         }
         this.subject$.next(command);
 
-        return handler.execute(command);
+        return handler.execute<R>(command);
     }
 
     bind<T extends ICommand>(handler: ICommandHandler<T>, name: string) {
